@@ -158,9 +158,44 @@ test.run() {
 		TEST_grpRes[$i]=$grpRes
 		out.ok "Running found tests for ${TEST_groups[$i]}"
 	done
-	#set|egrep ^TEST_
-	#set|egrep ^ASSERT_
-	#echo
+}
+test.reportJSON() {
+	local g t n ns s tst id step desc sdur serr sout sret gs=0 gt na a
+	echo "{\"Groups\":["
+	for (( g=0; g<${#TEST_groups[@]}; g++ ));do
+		[ -z ${TEST_grpRes[$g]} ] && continue
+		n=$(eval "echo \${#TEST_${TEST_groups[$g]}_tests[@]}")
+		[ $gs -ne 0 ] && printf ',';gs=1
+		printf '\t{ "name":"%s", "result":%d, "tests":[\n' "${TEST_groups[$g]}" "${TEST_grpRes[$g]}"
+		gt=0
+		for (( t=0; t<$n; t++ ));do
+			tst=$(eval "echo \${TEST_${TEST_groups[$g]}_tests[$t]}")
+			id=$(test.testID $tst)
+			[ -z ${TEST_results[$id]} ] && continue
+			[ $gt -ne 0 ] && printf '\t,\t'||printf '\t\t';gt=1
+			printf '{ "name":"%s", "description":"%s", "duration":%d, "priority":%d, "result":%d, "steps": [\n' "${TEST_tests[$t]}" "${TEST_desc[$t]}" "${TEST_duration[$t]}" "${TEST_priority[$t]}" "${TEST_results[$t]}"
+			ns=$(eval "echo \${#TEST_${tst}_steps[@]}")
+			for (( s=0; s<$ns; s++ ));do
+				[ $s -ne 0 ] && printf '\t\t,\t'||printf '\t\t\t'
+				printf '{ "name":"%s", "description":"%s", "duration":%d, "stderr":"%s", "stdout":"%s", "return":%d, "asserts": [\n' \
+					"$(eval "echo \${TEST_${tst}_steps[$s]}")" "$(eval "echo \${TEST_${tst}_sdesc[$s]}"|sed 's/"/\\"/g')" \
+					"$(eval "echo \${TEST_${tst}_stepDur[$s]}")" "$(eval "echo \${TEST_${tst}_stepErr[$s]}"|sed 's/"/\\"/g')" \
+					"$(eval "echo \${TEST_${tst}_stepOut[$s]}"|sed 's/"/\\"/g')" "$(eval "echo \${TEST_${tst}_stepRet[$s]}")"
+				na=$(eval "echo \${#ASSERT_${tst}_${s}_assert[@]}")
+				for (( a=0; a<$na; a++ ));do
+					[ $a -ne 0 ] && printf '\t\t\t,\t'||printf '\t\t\t\t'
+					printf '{ "description":"%s", "command":"%s", "result":%d }\n' \
+						"$(eval "echo \${ASSERT_${tst}_${s}_assert[$a]}"|sed 's/"/\\"/g')" \
+						"$(eval "echo \${ASSERT_${tst}_${s}_cmd[$a]}"|sed 's/"/\\"/g')" \
+						"$(eval "echo \${ASSERT_${tst}_${s}_result[$a]}")"
+				done
+				printf '\t\t\t]}\n'
+			done
+			printf '\t\t]}\n'
+		done
+		printf '\t]}\n'
+	done
+	echo "]}"
 }
 test.reportText() {
 	echo
