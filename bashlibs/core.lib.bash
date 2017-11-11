@@ -4,10 +4,12 @@ SCRIPT_file=${0##*/}
 SCRIPT_name=${SCRIPT_file%.sh}
 SCRIPT_path=$(dirname "$(readlink -f "$0")")
 is.set() { 	[ ! -z ${!1+x} ]; }
+is.number() {	[[ $1 =~ ^-?[0-9]+$ ]]; }
+is.function() {	typeset -f $1 >/dev/null; }
 is.array() { 	is.set $1 && [[ "$(declare -p $1)" =~ "declare -a" ]]; }
 
-OUT_levels=(NONE FAIL ERROR OK TASK WARNING NOTICE CMD INFO OUTPUT DETAIL ASSERT ALL)
-OUT_level=${OUT_level:-OUTPUT}
+OUT_levels=(NONE FAIL ERROR OK TASK WARNING STDERR NOTICE CMD INFO STDOUT DETAIL ASSERT ALL)
+OUT_level=${OUT_level:-STDOUT}
 out.levelID() {
 	local i
 	for (( i=0; i<${#OUT_levels[@]}; i++));do
@@ -21,6 +23,7 @@ OUT_color=()
 OUT_color[$(out.levelID NONE)]="${OUT_color[$(out.levelID NONE)]:-$(tput sgr0)}"
 OUT_color[$(out.levelID FAIL)]="${OUT_color[$(out.levelID FAIL)]:-$(tput setb 4;tput setab 1)}"
 OUT_color[$(out.levelID ERROR)]="${OUT_color[$(out.levelID ERROR)]:-$(tput setf 4;tput setaf 1)}"
+OUT_color[$(out.levelID STDERR)]="${OUT_color[$(out.levelID STDERR )]:-$(tput setf 4;tput setaf 1)}"
 OUT_color[$(out.levelID OK)]="${OUT_color[$(out.levelID OK)]:-$(tput setf 2;tput setaf 2)}"
 OUT_color[$(out.levelID WARNING)]="${OUT_color[$(out.levelID WARNING)]:-$(tput setf 6;tput setaf 3)}"
 OUT_color[$(out.levelID INFO)]="${OUT_color[$(out.levelID INFO)]:-$(tput setf 3;tput setaf 4)}"
@@ -38,13 +41,13 @@ out.init() {
 		OUT_id=$(out.levelID $lvl)
 		case "$lvl" in
 		TASK)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r[ %7s ] %s' \"\" \"\$*\""}";;
-		OUTPUT)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r%s\\n' \"\$*\""}";;
+		STDOUT)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r%s\\n' \"\$*\""}";;
 		CMD)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r${OUT_color[$OUT_id]}%s>${OUT_color[$(out.levelID NONE)]} %s\\n' $lvl \"\$*\""}";;
 		*)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r[ ${OUT_color[$OUT_id]}%7s${OUT_color[$(out.levelID NONE)]} ] %s\\n' $lvl \"\$*\""}";;
 		esac
 	done
 	OUT_levelID=$(out.levelID $OUT_level)
-	OUT_levelID=${OUT_levelID:-$(out.levelID OUTPUT)}
+	OUT_levelID=${OUT_levelID:-$(out.levelID STDOUT)}
 }
 out.lvl() {
 	local lvl=$1;shift
@@ -59,7 +62,7 @@ out.return() {
 	local id=$(out.levelID $1)
 	[ ${id:-10} -le ${OUT_levelID:-13} ] && eval "printf '\\n' >&${OUT_fd:-1}"
 }
-out.put() {	while read line;do out.lvl OUTPUT "$line";done; }
+out.put() {	while read line;do out.lvl STDOUT "$line";done; }
 out.error() {	out.lvl ERROR "$*"; }
 out.ok() {	out.lvl OK "$*"; }
 out.warn() {	out.lvl WARNING "$*"; }
@@ -84,10 +87,10 @@ log.lvl() {
 	if [ ${id:-10} -le ${LOG_levelID:-0} ];then
 		if [[ "$lvl" = "TASK" ]];then
 			[ $OUT_fd -eq 1 ] && log.separator >> $LOG_dir/$LOG_file
-			[ $OUT_fd -ne 1 ] && log.separator
+			[ $OUT_fd -ne 1 ] && eval "log.separator >&${LOG_fd:-1}"
 		fi
 		[ $OUT_fd -eq 1 ] && eval "$LOG_cmd" >> $LOG_dir/$LOG_file
-		[ $OUT_fd -ne 1 ] && eval "$LOG_cmd"
+		[ $OUT_fd -ne 1 ] && eval "$LOG_cmd  >&${LOG_fd:-1}"
 	fi
 }
 log.start() {
@@ -97,6 +100,7 @@ log.start() {
 	exec 4>&1
 	exec 1>>$LOG_dir/$LOG_file 2>&1
 	OUT_fd=4
+	LOG_fd=1
 	log.separator "#"
 	for i in ${LOG_head[*]};do
 		printf "%-15s : %s\n" "$i" "$(eval echo "\$$i")"
@@ -104,9 +108,13 @@ log.start() {
 	log.separator "#"
 }
 log.end() {
+	local R=${1:-$?}
+	log.separator "#"
+	[ $R -ne 0 ] && out.error "This script returned $R" || out.detail "This script succeded"
 	log.separator "#"
 	exec >&- >&4
 	OUT_fd=1
+	return $R
 }
 
 ARGS_vars=()
@@ -121,6 +129,7 @@ ARGS_cb=()
 ARGS_info=${ARGS_info:-''}
 ARGS_cmd="$*"
 ARGS_short_cmd=()
+ARGS_helpCallback=${ARGS_helpCallback:-""}
 args.declare() {
 	local ARGS_cnt=${#ARGS_vars[@]}
 	ARGS_validate[$ARGS_cnt]="N"
@@ -220,6 +229,10 @@ args.help() {
 		fi
 	done
 	echo
+	if [ ! -z "$ARGS_helpCallback" ] && is.function "$ARGS_helpCallback";then
+		$ARGS_helpCallback
+		echo
+	fi
 }
 args.parse() {
 	local f=0
