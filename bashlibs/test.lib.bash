@@ -199,7 +199,7 @@ test.reportJSON() {
 			id=$(test.testID $tst)
 			[ -z ${TEST_results[$id]} ] && continue
 			[ $gt -ne 0 ] && printf '\t,\t'||printf '\t\t';gt=1
-			printf '{ "name":"%s", "description":"%s", "duration":%d, "priority":%d, "result":%d, "total":%d, "steps": [\n' "${TEST_tests[$t]}" "${TEST_desc[$t]}" "${TEST_duration[$t]}" "${TEST_priority[$t]}" "${TEST_results[$t]}" "${TEST_asserts[$t]}"
+			printf '{ "name":"%s", "description":"%s", "duration":%d, "priority":%d, "result":%d, "total":%d, "steps": [\n' "${TEST_tests[$id]}" "${TEST_desc[$id]}" "${TEST_duration[$id]}" "${TEST_priority[$id]}" "${TEST_results[$id]}" "${TEST_asserts[$id]}"
 			ns=$(eval "echo \${#TEST_${tst}_steps[@]}")
 			for (( s=0; s<$ns; s++ ));do
 				stp=$(eval "echo \${TEST_${tst}_steps[$s]}")
@@ -228,7 +228,7 @@ test.reportJSON() {
 }
 test.reportText() {
 	echo
-	local g grpCnt=0 grpFail=0 t tstCnt=0 tstFail=0 a assCnt=0 assFail=0 s stpCnt=0 stpFail=0 n
+	local g grpCnt=0 grpFail=0 t tstCnt=0 tstFail=0 a assCnt=0 assFail=0 s stpCnt=0 stpFail=0 n fail
 	for (( g=0; g<${#TEST_groups[@]}; g++ ));do
 		if [ ! -z ${TEST_grpRes[$g]} ];then
 			grpCnt=$(( $grpCnt +1 ))
@@ -243,7 +243,8 @@ test.reportText() {
 		tst=${TEST_tests[$t]}
 		n=$(eval "echo \${#TEST_${tst}_steps[@]}")
 		for (( s=0; s<$n; s++ ));do
-			[ $(eval "echo \${TEST_${tst}_stepAssFail[$s]}") -ne 0 ] && stpFail=$(( $stpFail +1 ))
+			fail=$(eval "echo \${TEST_${tst}_stepAssFail[$s]}")
+			[ ${fail:-0} -ne 0 ] && stpFail=$(( $stpFail +1 ))
 		done
 		stpCnt=$(( $stpCnt + $n ))
 	done
@@ -304,20 +305,23 @@ test.reportHTML() {
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Test results</title>
+  <title>Test results for $TEST_name</title>
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../test.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet">
+  <style>$(cat $DATA_dir/test.css)</style>
   <!--[if lt IE 9]>
   <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
   <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
 </head>
-<body class=""><section class="content"></section>
+<body class=""><div class="container container-full"><div class="row"> <div class="col-md-2 scrollspy"></div><div class="col-md-10"><section class="content"></section></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.11.0/d3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/sebt3/d3-bootstrap@0.5.1/dist/d3-bootstrap-withextra.min.js"></script>
-<script src="../test.js"></script>
-<script>d3.select('section.content').call(widget.report().data($(test.reportJSON)));</script></body></html>
+<script src="https://cdn.jsdelivr.net/gh/sebt3/d3-bootstrap@0.5.2/dist/d3-bootstrap-withextra.min.js"></script>
+<script>$(cat $DATA_dir/test.js)</script>
+<script>data = $(test.reportJSON);
+d3.select('section.content').call(widget.report().data(data));
+d3.select('.scrollspy').call(widget.toc().data(data));</script></body></html>
 ENDHTML
 }
 

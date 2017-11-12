@@ -1,0 +1,33 @@
+body { position: relative; }
+.step-cmd { background-color:#888; color:white; border-top-left-radius: 10px; border-top-right-radius: 7px; }
+.step-cmd::before {  content: "cmd$ "; background-color:#DDD;color: black;  border-radius: 10px; margin:0 10px 0 4px; }
+.step-out, .step-ret, .step-err { background-color:#EEE; color:black;}
+.step-ret::before {  content: "return: "; background-color:#888;color: white;  border-radius: 10px; margin:0 10px 0 4px; }
+.step-out::before {  content: "stdout: "; background-color:#888;color: white;  border-radius: 10px; margin:0 10px 0 4px; }
+.step-err::before {  content: "stderr: "; background-color:rgb(169, 68, 66);color: white;  border-radius: 10px; margin:0 10px 0 4px; }
+.container-full { margin: 0 auto; width: 100%; }
+.panel-heading .btn-panel-top .btn { margin:0; padding:0; padding-left:4px; padding-right:4px; }
+.assert.assert-ok { background-color:rgb(223, 240, 216); color: rgb(60, 118, 61); }
+.assert.assert-failed { background-color:rgb(242, 222, 222); color: rgb(169, 68, 66); }
+.scrollspy .nav { background: #4baac8; }
+.scrollspy .nav a { color: black; }
+.scrollspy .nav li a:hover, .scrollspy .nav li a:focus { background: #86c5da; }
+.scrollspy .nav .active { font-weight: bold; background: #72bcd4; }
+.scrollspy .nav .nav { display: none; }
+.scrollspy .nav .active .nav { display: block; }
+.scrollspy .nav .active .nav .nav { display: none; }
+.scrollspy .nav .active .nav .active .nav { display: block; }
+.scrollspy .nav .nav a { font-weight: normal; font-size: .95em; }
+.scrollspy .nav .nav .nav a { font-weight: normal; font-size: .85em; }
+.scrollspy .nav .nav span { margin: 0 5px 0 2px; }
+.scrollspy .nav .nav .active .nav a, .scrollspy .nav .nav .active:hover .nav a, .scrollspy .nav .nav .active:focus .nav a { padding-left: 40px; border-left: 5px solid black;}
+.scrollspy .nav .nav .active a, .scrollspy .nav .nav .active:hover a, .scrollspy .nav .nav .active:focus a { font-weight: bold; padding-left: 20px; border-left: 3px solid black; }
+.scrollspy .nav .nav .nav .active a, .scrollspy .nav .nav .nav .active:hover a, .scrollspy .nav .nav .nav .active:focus a { font-weight: bold; padding-left: 40px; border-left: 5px solid black; }
+.affix-top { position: relative; width: 300px; }
+.affix { top: 20px; }
+.affix, .affix-bottom { width: 300px; }
+.affix-bottom { position: absolute; }
+
+
+
+

@@ -6,6 +6,7 @@ SHLIBDIR=${SHLIBDIR:-"$(cd "$(dirname $0)";pwd)/bashlibs"}
 . $SHLIBDIR/core.lib.bash
 . $SHLIBDIR/test.lib.bash
 OUT_dir=${OUT_dir:-"./out"}
+DATA_dir=${DATA_dir:-"$(cd "$(dirname $0)";pwd)/data"}
 OUT_filePrefix=${OUT_file:-"${SCRIPT_name}.$(log.stamp)"}
 DIR=${DIR:-"./tests"}
 PRI=${PRI:-3}
