@@ -33,7 +33,7 @@ OUT_color[$(out.levelID ASSERT)]="${OUT_color[$(out.levelID ASSERT)]:-$(tput set
 OUT_color[$(out.levelID CMD)]="${OUT_color[$(out.levelID CMD)]:-$(tput setf 6;tput setaf 4)}"
 OUT_cmd=()
 out.init() {
-	[ -x /usr/bin/resize ] && eval $(/usr/bin/resize)
+	[ -x /usr/bin/resize ] && eval $(/usr/bin/resize) >/dev/null 2>&1
 	local space="\033[$((${COLUMNS:-80} - 11))G"
 	OUT_fd=1
 	for lvl in ${OUT_levels[*]};do
