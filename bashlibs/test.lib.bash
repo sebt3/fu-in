@@ -344,11 +344,11 @@ assert() {
 	ASSERT_results+=($r)
 	return $r
 }
-assert.rc() { 		assert "[ \${TEST_${tst}_stepRet[$s]} -eq $1 ]" "Return code is $1" "Return code was expected to be $1"; }
-assert.notrc() { 	assert "[ \${TEST_${tst}_stepRet[$s]} -ne $1 ]" "Return code is not $1" "Return code shouldnt be $1"; }
-assert.stderr.empty() { assert "[ -z \"\${TEST_${tst}_stepErr[$s]}\" ]" "stderr is empty" "stderr was expected empty"; }
-assert.stdout.empty() { assert "[ -z \"\${TEST_${tst}_stepOut[$s]}\" ]" "stdout is empty" "stdout was expected empty"; }
-assert.stderr.match() { assert "[[ \"\${TEST_${tst}_stepErr[$s]}\" == $1 ]]" "stderr match \"$1\"" "stderr should have matched \"$1\""; }
-assert.stdout.match() { assert "[[ \"\${TEST_${tst}_stepOut[$s]}\" == $1 ]]" "stdout match \"$1\"" "stdout should have matched \"$1\""; }
-assert.stderr.notmatch() { assert "[[ \"\${TEST_${tst}_stepErr[$s]}\" != $1 ]]" "stderr dont match \"$1\"" "stderr should NOT have matched \"$1\""; }
-assert.stdout.notmatch() { assert "[[ \"\${TEST_${tst}_stepOut[$s]}\" != $1 ]]" "stdout dont match \"$1\"" "stdout should NOT have matched \"$1\""; }
+assert.rc() { 		assert "[ \${TEST_${tst}_stepRet[$s]} -eq $1 ]" "${2:-"Return code is $1"}" "${3:-"Return code was expected to be $1"}"; }
+assert.notrc() { 	assert "[ \${TEST_${tst}_stepRet[$s]} -ne $1 ]" "${2:-"Return code is not $1"}" "${3:-"Return code shouldnt be $1"}"; }
+assert.stderr.empty() { assert "[ -z \"\${TEST_${tst}_stepErr[$s]}\" ]" "${1:-"stderr is empty"}" "${2:-"stderr was expected empty"}"; }
+assert.stdout.empty() { assert "[ -z \"\${TEST_${tst}_stepOut[$s]}\" ]" "${1:-"stdout is empty"}" "${2:-"stdout was expected empty"}"; }
+assert.stderr.match() { assert "[[ \"\${TEST_${tst}_stepErr[$s]}\" == $1 ]]" "${2:-"stderr match \"$1\""}" "${3:-"stderr should have matched \"$1\""}"; }
+assert.stdout.match() { assert "[[ \"\${TEST_${tst}_stepOut[$s]}\" == $1 ]]" "${2:-"stdout match \"$1\""}" "${3:-"stdout should have matched \"$1\""}"; }
+assert.stderr.notmatch() { assert "[[ \"\${TEST_${tst}_stepErr[$s]}\" != $1 ]]" "${2:-"stderr dont match \"$1\""}" "${3:-"stderr should NOT have matched \"$1\""}"; }
+assert.stdout.notmatch() { assert "[[ \"\${TEST_${tst}_stepOut[$s]}\" != $1 ]]" "${2:-"stdout dont match \"$1\""}" "${3:-"stdout should NOT have matched \"$1\""}"; }
