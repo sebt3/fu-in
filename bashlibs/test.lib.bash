@@ -78,6 +78,17 @@ test.testID() {
 test.handleOut() {
 	gawk -vD=$1 '{print;print D" "$0 >"/dev/fd/6";fflush("/dev/fd/6") }'
 }
+test.ctrl() {
+	# close all non-usefull filedescriptor
+	(
+		local n
+		for n in $(find /proc/$BASHPID/fd -type l -printf '%f\n');do
+			((n > 2)) && eval "exec $n>&-"
+		done
+		eval "$@"
+	)
+}
+
 test.run() {
 	local min_prio=$1
 	local grps=$2
@@ -144,7 +155,7 @@ test.run() {
 				elif [ $oldfd -eq 4 ];then
 					exec 5>&1;LOG_fd=5
 				fi
-				eval "$( ${step}.run  2> >(err=$(test.handleOut STDERR); typeset -p err) > >(out=$(test.handleOut STDOUT); typeset -p out); ret=$?; typeset -p ret )"
+				eval "$(test.ctrl ${step}.run  2> >(err=$(test.handleOut STDERR); typeset -p err) > >(out=$(test.handleOut STDOUT); typeset -p out); ret=$?; typeset -p ret )"
 				if [ $oldfd -eq 1 ];then
 					exec >&- >&4;OUT_fd=${oldfd}
 				elif [ $oldfd -eq 4 ];then
