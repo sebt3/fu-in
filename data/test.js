@@ -1,36 +1,5 @@
 widget		= { }
-widget.base	= function() {
-	var data = {}, called = false, ready=false, root, src;
-	function base(s) { called=true; s.each(base.init); return base; }
-	base.dispatch	= d3.dispatch("init", "renderUpdate", "dataUpdate");
-	base.inited	= function() {return called; }
-	base.ready	= function() {return ready; }
-	base.init	= function() { 
-		root = d3.select(this);
-		base.dispatch.call("init");
-		if (ready)
-			base.dispatch.call("renderUpdate");
-	}
-	base.root	= function(_) {
-		if (arguments.length) {
-			root = _;
-			return base;
-		} else if (base.inited())
-			return root; 
-		else
-			return false;
-	}
-	base.data	= function(_) { 
-		if (!arguments.length) return data;
-		data = _;
-		ready=true;
-		base.dispatch.call("dataUpdate");
-		if (called)
-			base.dispatch.call("renderUpdate");
-		return base;
-	}
-	return base;
-}
+widget.base	= dgc.core.base;
 widget.assert	= function() {
 	var assert = widget.base();
 /*	assert.dispatch.on("init.assert", function() {
@@ -118,6 +87,21 @@ widget.report	= function() {
 	var tst = { "cnt":0,"fail":0,"pct":20 }
 	var step = { "cnt":0,"fail":0,"pct":30 }
 	var assert = { "cnt":0,"fail":0,"pct":40 }
+	var overall = [], failed, bars = dgc.bar.bar();
+	bars.bars().colorFunction = function(d) { if (d.key=="failed") return function(){return "#d9534f";}; else return function(){return "#5cb85c"; };}
+	bars.bars().dispatch.on("click.bars", function(d) {window.location.href =d.data.url})
+	bars.axes().xAxisLine		= function(g) {
+		g.call(d3.axisBottom(bars.axes().xAxis));
+		g.select(".domain").remove();
+		g.selectAll(".tick line").attr("stroke", "none").style("stroke-width", "0px");
+	}
+	bars.axes().yAxisLine		= function(g) {
+		g.call(d3.axisRight(bars.axes().yAxis).tickSize(bars.axes().width()));
+		g.select(".domain").remove();
+		g.selectAll(".tick line").attr("stroke", "lightgrey").style("stroke-width", "0px");
+		g.selectAll(".tick:not(:first-of-type) line").attr("stroke-dasharray", "5,5");
+		g.selectAll(".tick text").attr("x", -20);
+	};
 	report.dispatch.on("dataUpdate.report", function() {
 		grp.cnt = report.data().groups.length;
 		var g, t, s;
@@ -126,34 +110,55 @@ widget.report	= function() {
 				grp.fail++;
 			tst.cnt += report.data().groups[g].tests.length;
 			for(t=0;t<report.data().groups[g].tests.length;t++) {
+				failed=0;
 				if (report.data().groups[g].tests[t].result>0)
 					tst.fail++;
 				step.cnt += report.data().groups[g].tests[t].steps.length;
 				for (s=0;s<report.data().groups[g].tests[t].steps.length;s++) {
-					if (report.data().groups[g].tests[t].steps[s].assertFail>0)
+					if (report.data().groups[g].tests[t].steps[s].assertFail>0) {
 						step.fail++;
+						failed++;
+					}
 					assert.cnt  += report.data().groups[g].tests[t].steps[s].assertCnt;
 					assert.fail += report.data().groups[g].tests[t].steps[s].assertFail;
 				}
+				overall.push({
+					"type":report.data().groups[g].tests[t].name,
+					"url":"#test-"+report.data().groups[g].tests[t].name,
+					"sucess": report.data().groups[g].tests[t].steps.length - failed,
+					"failed": failed
+				});
 			}
 		}
 		grp.pct = (grp.cnt-grp.fail)*100/grp.cnt;
 		tst.pct = (tst.cnt-tst.fail)*100/tst.cnt;
 		step.pct = (step.cnt-step.fail)*100/step.cnt;
 		assert.pct = (assert.cnt-assert.fail)*100/assert.cnt;
+		bars.data(overall);
 	});
 	report.dispatch.on("renderUpdate.report", function() {
 		var g, t, p;
 		var row = report.root().append('div').attr('id','summary').append('div').classed('row',true);
+		var bar = row.append('div').attr('class','col-md-12').call(bs.panel().class('panel-info').title('<i class="fa fa-bar-chart" aria-hidden="true"></i> Overall'));
+		bar.select('.panel-body').append('div').call(bars);
 		var st = row.append('div').attr('class','col-md-6').call(bs.panel().class('panel-info').title('<i class="fa fa-pie-chart" aria-hidden="true"></i> Statistics'));
-		st.select('.panel-body').append('div').call(bs.progress().title(grp.cnt+' groups')
-			.data([{'pct':grp.pct, 'class':'progress-bar-success'}])).select('.progress').classed('progress-bar-danger',true);
-		st.select('.panel-body').append('div').call(bs.progress().title(tst.cnt+' tests')
-			.data([{'pct':tst.pct, 'class':'progress-bar-success'}])).select('.progress').classed('progress-bar-danger',true);
-		st.select('.panel-body').append('div').call(bs.progress().title(step.cnt+' steps')
-			.data([{'pct':step.pct, 'class':'progress-bar-success'}])).select('.progress').classed('progress-bar-danger',true);
-		st.select('.panel-body').append('div').call(bs.progress().title(assert.cnt+' asserts')
-			.data([{'pct':assert.pct, 'class':'progress-bar-success'}])).select('.progress').classed('progress-bar-danger',true);
+		st.select('.panel-body').append('div').call(bs.row()
+			.cell('col-md-3',dgc.donut.donutWithLines()
+				.line1('Groups').line2(dgc.core.format.fileSize(grp.pct)+'%')
+				.data([ {"label":"failed", "value":grp.fail, "color":"#d9534f" },
+					{"label":"succes", "value":grp.cnt-grp.fail, "color":"#5cb85c" }]))
+			.cell('col-md-3',dgc.donut.donutWithLines()
+				.line1('Tests').line2(dgc.core.format.fileSize(tst.pct)+'%')
+				.data([ {"label":"failed", "value":tst.fail, "color":"#d9534f" },
+					{"label":"succes", "value":tst.cnt-tst.fail, "color":"#5cb85c" }]))
+			.cell('col-md-3',dgc.donut.donutWithLines()
+				.line1('Steps').line2(dgc.core.format.fileSize(step.pct)+'%')
+				.data([ {"label":"failed", "value":step.fail, "color":"#d9534f" },
+					{"label":"succes", "value":step.cnt-step.fail, "color":"#5cb85c" }]))
+			.cell('col-md-3',dgc.donut.donutWithLines()
+				.line1('Asserts').line2(dgc.core.format.fileSize(assert.pct)+'%')
+				.data([ {"label":"failed", "value":assert.fail, "color":"#d9534f" },
+					{"label":"succes", "value":assert.cnt-assert.fail, "color":"#5cb85c" }])));
 		var fail = row.append('div').attr('class','col-md-6').call(bs.panel().class('panel-danger').title('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Failed tests list'));
 		for(g=0;g<grp.cnt;g++) {
 			for(t=0;t<report.data().groups[g].tests.length;t++) {
@@ -170,8 +175,7 @@ widget.report	= function() {
 		var	update	= report.root().selectAll('div.group').data(report.data().groups);
 		update.exit().remove();
 		update.enter().append('div').attr('class','group').each(function(d){d3.select(this).call(widget.group().data(d))});
-		console.log(report.data());
-		//console.log(report.root());
+		//console.log(report.data());
 	});
 	return report;
 }

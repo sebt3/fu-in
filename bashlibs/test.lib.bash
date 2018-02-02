@@ -310,6 +310,14 @@ ENDXML
 	echo "</testsuites>"
 }
 test.reportHTML() {
+	local jsfile=$DATA_dir/test.js
+	local cssfile=$DATA_dir/test.css
+	if which uglifyjs >/dev/null;then
+		uglifyjs $jsfile>$DATA_dir/test.min.js && jsfile=$DATA_dir/test.min.js
+	elif [ -e $DATA_dir/test.min.js ];then
+		jsfile=$DATA_dir/test.min.js
+	fi
+
 	cat <<ENDHTML
 <!DOCTYPE html>
 <html>
@@ -320,7 +328,7 @@ test.reportHTML() {
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet">
-  <style>$(cat $DATA_dir/test.css)</style>
+  <link href="https://cdn.jsdelivr.net/gh/sebt3/shell_test@0.1/data/test.css" rel="stylesheet">
   <!--[if lt IE 9]>
   <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
   <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -329,7 +337,8 @@ test.reportHTML() {
 <body class=""><div class="container container-full"><div class="row"> <div class="col-md-2 scrollspy"></div><div class="col-md-10"><section class="content"></section></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.11.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/sebt3/d3-bootstrap@0.5.2/dist/d3-bootstrap-withextra.min.js"></script>
-<script>$(cat $DATA_dir/test.js)</script>
+<script src="https://cdn.jsdelivr.net/gh/sebt3/d3-graph-componants@0.1/dist/d3-graph-componants.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/sebt3/shell_test@0.1/data/test.min.js"></script>
 <script>data = $(test.reportJSON);
 d3.select('section.content').call(widget.report().data(data));
 d3.select('.scrollspy').call(widget.toc().data(data));</script></body></html>

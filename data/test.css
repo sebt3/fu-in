@@ -9,7 +9,7 @@ body { position: relative; }
 .panel-heading .btn-panel-top .btn { margin:0; padding:0; padding-left:4px; padding-right:4px; }
 .assert.assert-ok { background-color:rgb(223, 240, 216); color: rgb(60, 118, 61); }
 .assert.assert-failed { background-color:rgb(242, 222, 222); color: rgb(169, 68, 66); }
-.scrollspy .nav { background: #4baac8; }
+.scrollspy .nav { background: #4baac8; border-radius:4px;}
 .scrollspy .nav a { color: black; }
 .scrollspy .nav li a:hover, .scrollspy .nav li a:focus { background: #86c5da; }
 .scrollspy .nav .active { font-weight: bold; background: #72bcd4; }
@@ -23,11 +23,8 @@ body { position: relative; }
 .scrollspy .nav .nav .active .nav a, .scrollspy .nav .nav .active:hover .nav a, .scrollspy .nav .nav .active:focus .nav a { padding-left: 40px; border-left: 5px solid black;}
 .scrollspy .nav .nav .active a, .scrollspy .nav .nav .active:hover a, .scrollspy .nav .nav .active:focus a { font-weight: bold; padding-left: 20px; border-left: 3px solid black; }
 .scrollspy .nav .nav .nav .active a, .scrollspy .nav .nav .nav .active:hover a, .scrollspy .nav .nav .nav .active:focus a { font-weight: bold; padding-left: 40px; border-left: 5px solid black; }
-.affix-top { position: relative; width: 300px; }
+.affix-top { position: relative; margin-top:20px; width: 100%; }
 .affix { top: 20px; }
-.affix, .affix-bottom { width: 300px; }
+.affix, .affix-bottom { width: 15%; }
 .affix-bottom { position: absolute; }
-
-
-
-
+#summary{margin-top:20px}
