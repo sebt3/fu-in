@@ -32,6 +32,8 @@ OUT_color[$(out.levelID DETAIL)]="${OUT_color[$(out.levelID DETAIL)]:-$(tput set
 OUT_color[$(out.levelID ASSERT)]="${OUT_color[$(out.levelID ASSERT)]:-$(tput setf 3;tput setaf 12)}"
 OUT_color[$(out.levelID CMD)]="${OUT_color[$(out.levelID CMD)]:-$(tput setf 6;tput setaf 4)}"
 OUT_cmd=()
+OUT_needLF=()
+OUT_closeLF=()
 out.init() {
 	[ -x /usr/bin/resize ] && eval $(/usr/bin/resize) >/dev/null 2>&1
 	local space="\033[$((${COLUMNS:-80} - 11))G"
@@ -45,16 +47,28 @@ out.init() {
 		CMD)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r${OUT_color[$OUT_id]}%s>${OUT_color[$(out.levelID NONE)]} %s\\n' $lvl \"\$*\""}";;
 		*)	OUT_cmd[$OUT_id]="${OUT_cmd[$OUT_id]:-"printf '\\r[ ${OUT_color[$OUT_id]}%7s${OUT_color[$(out.levelID NONE)]} ] %s\\n' $lvl \"\$*\""}";;
 		esac
+		echo "${OUT_cmd[$OUT_id]}"|grep -q '\\n'
+		OUT_needLF[$OUT_id]=$?
+		case "$lvl" in
+		ERROR|OK) 	OUT_closeLF[$OUT_id]=1;;
+		*)		OUT_closeLF[$OUT_id]=0;;
+		esac
 	done
 	OUT_levelID=$(out.levelID $OUT_level)
 	OUT_levelID=${OUT_levelID:-$(out.levelID STDOUT)}
+	OUT_currentLF=0
 }
 out.lvl() {
 	local lvl=$1;shift
 	local id=$(out.levelID $lvl)
 	id=${id:-10}
 	local cmd=${OUT_cmd[$id]}
-	[ $id -le ${OUT_levelID:-13} ] && eval "${cmd:-"printf '\\r%s\\n' \"\$*\""} >&${OUT_fd:-1}"
+	if [ $id -le ${OUT_levelID:-13} ];then
+		[ $OUT_currentLF -eq 1 ] && [ ${OUT_closeLF[$id]} -ne 1 ] && eval "echo >&${OUT_fd:-1}"
+		OUT_currentLF=0
+		[ ${OUT_needLF[$id]} -eq 1 ] && OUT_currentLF=1
+		eval "${cmd:-"printf '\\r%s\\n' \"\$*\""} >&${OUT_fd:-1}"
+	fi
 	log.lvl "$lvl" "$*"
 	return 0
 }
