@@ -275,8 +275,9 @@ test.reportText() {
 	#TODO: list failed tests
 }
 test.reportXML() {
-	local g t n ns s tst id step desc sdur serr sout sret gs=0 gt na a stp filter
-	filter='s/\\/\\\\/g;s/"/\\\\"/g;$!s/$/\\/'
+	local g t n ns s tst id step desc sdur serr sout sret gs=0 gt na a stp filterP filterO
+	filterP='s/&/\&amp;/g;s/"/\&quot;/g;s/</\&lt;/g;$!s/$/\\/'
+	filterO='s/\\/\\\\/g;s/&/\&amp;/g;s/</\&lt;/g;s/>/\&gt;/g;$!s/$/\\/'
 	cat <<ENDXML
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites id="test" errors="$ASSERT_haveFailed" name="$TEST_name" tests="${#ASSERT_results[@]}" time="$TEST_globalDuration">
@@ -294,13 +295,13 @@ ENDXML
 				stp=$(eval "echo \${TEST_${tst}_steps[$s]}")
 				na=$(eval "echo \${#ASSERT_${tst}_${s}_assert[@]}")
 				cat <<ENDXML
-        <testcase id="$stp" assertions="$na" name="$(eval "echo \${TEST_${tst}_sdesc[$s]}"|sed $filter)"  time="${STEP_SEC[$Fi]}">
-            <system-out>$(eval "echo \${TEST_${tst}_stepOut[$s]}"|sed $filter)</system-out>
-            <system-err>$(eval "echo \${TEST_${tst}_stepErr[$s]}"|sed $filter)</system-err>
+        <testcase id="$stp" assertions="$na" name="$(eval "echo \${TEST_${tst}_sdesc[$s]}"|sed "$filterP")"  time="${STEP_SEC[$Fi]}">
+            <system-out>$(eval "echo \${TEST_${tst}_stepOut[$s]}"|sed "$filterO")</system-out>
+            <system-err>$(eval "echo \${TEST_${tst}_stepErr[$s]}"|sed "$filterO")</system-err>
 ENDXML
 				for (( a=0; a<$na; a++ ));do
 					gt=$(eval "echo \${ASSERT_${tst}_${s}_result[$a]}")
-					[ $gt -ne 0 ] && printf "\t\t<error message=\"$(eval "echo \${ASSERT_${tst}_${s}_assert[$a]}"|sed $filter)\"  type=\"ERROR\"/>\n"
+					[ $gt -ne 0 ] && printf "\t\t<error message=\"$(eval "echo \${ASSERT_${tst}_${s}_assert[$a]}"|sed "$filterP")\"  type=\"ERROR\"/>\n"
 				done
 				printf '\t</testcase>\n'
 			done
