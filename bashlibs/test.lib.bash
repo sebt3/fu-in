@@ -184,7 +184,7 @@ test.run() {
 			TEST_results[$j]=$ASSERT_haveFailed;
 			if [ $ASSERT_haveFailed -ne 0 ];then
 				grpRes=$(( $grpRes + 1 ))
-				out.error "  ${TEST_desc[$j]}"
+				out.lvl FAIL "  ${TEST_desc[$j]}"
 			else
 				out.ok "  ${TEST_desc[$j]}"
 			fi
@@ -302,8 +302,8 @@ ENDXML
 					gt=$(eval "echo \${ASSERT_${tst}_${s}_result[$a]}")
 					[ $gt -ne 0 ] && printf "\t\t<error message=\"$(eval "echo \${ASSERT_${tst}_${s}_assert[$a]}"|sed $filter)\"  type=\"ERROR\"/>\n"
 				done
+				printf '\t</testcase>\n'
 			done
-			printf '\t</testcase>\n'
 		done
 		echo "    </testsuite>"
 	done

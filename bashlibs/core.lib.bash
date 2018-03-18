@@ -18,6 +18,7 @@ out.levelID() {
 			return
 		fi
 	done
+	echo 0
 }
 OUT_color=()
 OUT_color[$(out.levelID NONE)]="${OUT_color[$(out.levelID NONE)]:-$(tput sgr0)}"
@@ -50,7 +51,7 @@ out.init() {
 		echo "${OUT_cmd[$OUT_id]}"|grep -q '\\n'
 		OUT_needLF[$OUT_id]=$?
 		case "$lvl" in
-		ERROR|OK) 	OUT_closeLF[$OUT_id]=1;;
+		FAIL|OK) 	OUT_closeLF[$OUT_id]=1;;
 		*)		OUT_closeLF[$OUT_id]=0;;
 		esac
 	done
@@ -111,6 +112,7 @@ log.start() {
 	local i=0
 	out.init
 	LOG_levelID=$(out.levelID $LOG_level)
+	[ ${LOG_levelID} -eq 0 ] && return 0
 	exec 4>&1
 	exec 1>>$LOG_dir/$LOG_file 2>&1
 	OUT_fd=4
@@ -123,10 +125,10 @@ log.start() {
 }
 log.end() {
 	local R=${1:-$?}
-	log.separator "#"
+	[ ${LOG_levelID} -eq 0 ] || log.separator "#"
 	[ $R -ne 0 ] && out.error "This script returned $R" || out.detail "This script succeded"
-	log.separator "#"
-	exec >&- >&4
+	[ ${LOG_levelID} -eq 0 ] || log.separator "#"
+	[ ${LOG_levelID} -eq 0 ] || exec >&- >&4
 	OUT_fd=1
 	return $R
 }
@@ -147,8 +149,8 @@ ARGS_helpCallback=${ARGS_helpCallback:-""}
 args.declare() {
 	local ARGS_cnt=${#ARGS_vars[@]}
 	ARGS_validate[$ARGS_cnt]="N"
-	if [[ $1 == "N" ]] || [[ $1 == "Y" ]];then
-		ARGS_validate[$ARGS_cnt]="$1"
+	if [[ $1 == "DoValidate" ]];then
+		ARGS_validate[$ARGS_cnt]="Y"
 		shift
 	fi
 	LOG_head+=($1)
@@ -157,15 +159,15 @@ args.declare() {
 	ARGS_short[$ARGS_cnt]=$1;shift
 	ARGS_long[$ARGS_cnt]=$1;shift
 	case $1 in
-	Y*|y*|1)	ARGS_haveVal[$ARGS_cnt]='Y';shift;;
+	Y*|y*|1|V*|v*)	ARGS_haveVal[$ARGS_cnt]='Y';shift;;
 	*)		ARGS_haveVal[$ARGS_cnt]='N';eval "${ARGS_vars[$ARGS_cnt]}=N";shift;;
 	esac
 	case $1 in
-	Y*|y*|1)	ARGS_option[$ARGS_cnt]='Y';eval "ARGS_values_${ARGS_vars[$ARGS_cnt]}=();ARGS_desc_${ARGS_vars[$ARGS_cnt]}=()";shift;;
+	Y*|y*|1|o*|O*)	ARGS_option[$ARGS_cnt]='Y';eval "ARGS_values_${ARGS_vars[$ARGS_cnt]}=();ARGS_desc_${ARGS_vars[$ARGS_cnt]}=()";shift;;
 	*)		ARGS_option[$ARGS_cnt]='N';shift;;
 	esac
 	case $1 in
-	Y*|y*|1)	ARGS_mandatory[$ARGS_cnt]='Y';shift;;
+	Y*|y*|1|m*|M*)	ARGS_mandatory[$ARGS_cnt]='Y';shift;;
 	*)		ARGS_mandatory[$ARGS_cnt]='N';shift;;
 	esac
 	ARGS_desc[$ARGS_cnt]="$*";
@@ -183,8 +185,12 @@ args.option.declare() {
 	local s=$1;shift;
 	local l=$1;shift;
 	local m=$1;shift;
-	local c=$1;shift;
-	args.declare "$c" "$V" "$s" "$l" Y Y $m "$*"
+	local c="";
+	case $1 in
+	Y*|y*|1|V*|v*|C*|c*)	c="DoValidate";;
+	esac
+	shift;
+	args.declare $c "$V" "$s" "$l" Vals Option $m "$*"
 }
 args.option() {
 	local A=$1;shift;local V=$1;shift
@@ -192,7 +198,7 @@ args.option() {
 	eval "ARGS_desc_${A}+=('$*')"
 }
 args.use.help() {
-	args.declare ARGS_help       -h --help       N N N Show this help text
+ 	args.declare ARGS_help       -h --help       NoVal NoOption NotMandatory Show this help text
 }
 args.help() {
 	local l="$0"
@@ -234,7 +240,7 @@ args.help() {
 	done
 	for (( i=0; i<${#ARGS_vars[@]}; i++ ));do
 		if [[ "${ARGS_option[$i]}" = "Y" ]];then
-			echo;echo "Available values for ${ARGS_vars[$i]}:";n=0
+			echo;echo "Available values for ${ARGS_vars[$i]} (${ARGS_desc[$i]}):";n=0
 			for j in $(eval "echo \${ARGS_values_${ARGS_vars[$i]}[*]}");do
 				l=$(eval "echo \${ARGS_desc_${ARGS_vars[$i]}[$n]}")
 				n=$(( $n +1 ))
@@ -267,14 +273,16 @@ args.parse() {
 					elif [ $# -lt 2 ];then
 						out.error "$1 expect a value"
 						args.help
+						out.error "$1 expect a value"
 						exit 1
 					elif [[ "${ARGS_option[$i]}" = "Y" ]] && [[ "${ARGS_validate[$i]}" = "Y" ]];then
 						for j in $(eval "echo \${ARGS_values_${ARGS_vars[$i]}[*]}");do
 							[[ "$2" = "$j" ]] && f=1
 						done
 						if [ $f -eq 0 ];then
-							out.error "\"$2\" is an invalid value for \"$1\""
+							out.error "\"$2\" is an invalid value for \"${ARGS_desc[$i]}\" ($1)"
 							args.help
+							out.error "\"$2\" is an invalid value for \"${ARGS_desc[$i]}\" ($1)"
 							exit 1
 						fi
 						eval "${ARGS_vars[$i]}=\"$2\"";
@@ -291,6 +299,7 @@ args.parse() {
 						if ! ${ARGS_cb[$i]} $v;then
 							out.error "\"$v\" is an invalid value for \"${ARGS_vars[$i]}\""
 							args.help
+							out.error "\"$v\" is an invalid value for \"${ARGS_vars[$i]}\""
 							exit 1
 						fi
 					fi;;
@@ -299,6 +308,7 @@ args.parse() {
 			if [ $f -eq 0 ];then
 				out.error "Unknown flag \"$1\""
 				args.help
+				out.error "Unknown flag \"$1\""
 				exit 1
 			fi
 			shift
@@ -318,6 +328,7 @@ args.parse() {
 						if [ $f -eq 0 ];then
 							out.error "\"$1\" is an invalid value for \"$v\""
 							args.help
+							out.error "\"$1\" is an invalid value for \"$v\""
 							exit 1
 						fi
 					fi
@@ -337,7 +348,11 @@ args.parse() {
 			f=1
 			out.error "flag ${ARGS_long[$i]} should be used"
 			args.help
+			out.error "flag ${ARGS_long[$i]} should be used"
 			exit 3
 		fi
 	done
+	if is.function args.post;then
+		args.post
+	fi
 }

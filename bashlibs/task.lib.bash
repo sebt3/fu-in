@@ -65,6 +65,14 @@ task.run() {
 	for ((i=$min;i<=$max;i++));do
 		TASK_current=$i
 		out.task "[$i] ${TASK_desc[$i]}"
+		if is.function "${TASK_name[$i]}.precheck";then
+			eval "${TASK_name[$i]}.precheck";ret=$?;
+			if [ $ret -ne 0 ];then
+				out.error "precheck for \"${TASK_desc[$i]}\" have failed"
+				out.lvl FAIL "[$i] ${TASK_desc[$i]}"
+				return $ret
+			fi
+		fi
 		oldfd=${OUT_fd:-1};
 		if [ $oldfd -eq 1 ];then
 			exec 4>&1;OUT_fd=4
@@ -80,7 +88,7 @@ task.run() {
 		fi
 		TASK_out=$out TASK_err=$err TASK_ret=$ret ${TASK_verify[$i]};ret=$?
 		if [ $ret -ne 0 ];then
-			out.error "[$i] ${TASK_desc[$i]}"
+			out.lvl FAIL "[$i] ${TASK_desc[$i]}"
 			return $ret
 		else
 			out.ok "[$i] ${TASK_desc[$i]}"
@@ -93,9 +101,9 @@ task.script() {
 	local i
 	MIN=0
 	MAX=$(( ${#TASK_name[@]} - 1 ))
-	args.declare MIN -b --begin Y N N "Begin at that task"
-	args.declare MAX -e --end Y N N "End at that task"
-	args.declare ONLY -o --only Y N N "Only run this step"
+	args.declare MIN  -b --begin Vals NoOption NotMandatory "Begin at that task"
+	args.declare MAX  -e --end   Vals NoOption NotMandatory "End at that task"
+	args.declare ONLY -o --only  Vals NoOption NotMandatory "Only run this step"
 	ARGS_helpCallback=task.list
 	args.use.help
 	args.parse "$@"
@@ -154,6 +162,10 @@ act.add() {
 	shift
 	ACTIVITY_desc[$i]="$*"
 }
+act.add.post() {
+	act.add "$@"
+	args.option ACT "$@"
+}
 act.set() {
 	if is.function $1;then
 		eval "$1"
@@ -169,20 +181,20 @@ act.script() {
 	local i
 	local i
 	MIN=0
-	MAX=
-	args.option.declare ACT -a --activity Y Y "Select the activity to run"
+	#MAX=
+	args.option.declare ACT -a --activity Mandatory C "Select the activity to run"
 	for (( i=0; i<${#ACTIVITY_name[@]}; i++ ));do
 		args.option ACT "${ACTIVITY_name[$i]}" "${ACTIVITY_desc[$i]}"
 	done
 	ARGS_short_cmd=(ACT "${ARGS_short_cmd[@]}")
-	args.declare LST -l --list  N N N "List all available tasks"
-	args.declare MIN -b --begin Y N N "Begin at that task"
-	args.declare MAX -e --end Y N N "End at that task"
-	args.declare ONLY -o --only Y N N "Only run this step"
+	args.declare LST  -l --list  NoVal NoOption NotMandatory "List all available tasks"
+	args.declare MIN  -b --begin Vals  NoOption NotMandatory "Begin at that task"
+	args.declare MAX  -e --end   Vals  NoOption NotMandatory "End at that task"
+	args.declare ONLY -o --only  Vals  NoOption NotMandatory "Only run this step"
 	args.use.help
 	args.parse "$@"
 	act.set $ACT
-	if ! is.set $MAX;then
+	if ! is.set MAX;then
 		MAX=$(( ${#TASK_name[@]} - 1 ))
 	fi
 	if ! is.number $MIN || ! is.number $MAX;then
@@ -228,7 +240,7 @@ act.script() {
 		echo
 	else
 		mkdir -p $LOG_dir
-		log.start
+		[ $(out.levelID $LOG_level) -eq 0 ] && log.start
 		task.run "$MIN" "$MAX"
 		log.end
 	fi
