@@ -276,7 +276,7 @@ test.reportText() {
 }
 test.reportXML() {
 	local g t n ns s tst id step desc sdur serr sout sret gs=0 gt na a stp filter
-	filter='s/\\/\\\\/g;s/"/\\"/g;$!s/$/\\/'
+	filter='s/\\/\\\\/g;s/"/\\\\"/g;$!s/$/\\/'
 	cat <<ENDXML
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites id="test" errors="$ASSERT_haveFailed" name="$TEST_name" tests="${#ASSERT_results[@]}" time="$TEST_globalDuration">
