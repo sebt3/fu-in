@@ -305,8 +305,8 @@ ENDXML
 				done
 				printf '\t</testcase>\n'
 			done
+			echo "    </testsuite>"
 		done
-		echo "    </testsuite>"
 	done
 	echo "</testsuites>"
 }
