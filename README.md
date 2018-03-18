@@ -53,12 +53,12 @@ See the tests in the tests directory for more examples.
 
 | asserts | args | Description |
 | --- | --- | --- |
-| assert | <test> <OK description> <ERR description> | Generic assert that test for a given shell test |
-| assert.rc | <rc> | Validate that the return code was the expected value |
-| assert.notrc | <rc> | Validate that the return code was not the forbidden value |
+| assert | "test" "OK description" "ERR description" | Generic assert that test for a given shell test |
+| assert.rc | rc | Validate that the return code was the expected value |
+| assert.notrc | rc | Validate that the return code was not the forbidden value |
 | assert.stderr.empty |  | Verify that there was no ouput on STDERR |
 | assert.stdout.empty |  | Verify that there was no ouput on STDOUT |
-| assert.stderr.match | <string> | Check if stderr output match the given string |
-| assert.stdout.match | <string> | Check if the output match the given string |
-| assert.stderr.notmatch | <string> | Check if stderr output contain the forbidden string |
-| assert.stdout.notmatch | <string> | Check if the output contain the forbidden string |
+| assert.stderr.match | string | Check if stderr output match the given string |
+| assert.stdout.match | string | Check if the output match the given string |
+| assert.stderr.notmatch | string | Check if stderr output contain the forbidden string |
+| assert.stdout.notmatch | string | Check if the output contain the forbidden string |
