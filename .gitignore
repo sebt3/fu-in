@@ -1,2 +1,4 @@
-logs
-out
+.kdev4/*
+fu-in.kdev4
+logs/*
+out/*

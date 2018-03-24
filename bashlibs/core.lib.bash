@@ -1,7 +1,7 @@
 #!/bin/bash
 # BSD 3-Clause License
 # 
-# Copyright (c) 2017-2018, Sébastien Huss
+# Copyright (c) 2018, Sébastien Huss
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -140,7 +140,7 @@ log.lvl() {
 log.start() {
 	local i=0
 	out.init
-	LOG_levelID=$(out.levelID $LOG_level)
+	LOG_levelID=$(out.levelID ${LOG_level:-ALL})
 	[ ${LOG_levelID} -eq 0 ] && return 0
 	exec 4>&1
 	exec 1>>$LOG_dir/$LOG_file 2>&1
@@ -154,10 +154,10 @@ log.start() {
 }
 log.end() {
 	local R=${1:-$?}
-	[ ${LOG_levelID} -eq 0 ] || log.separator "#"
+	[ ${LOG_levelID:-15} -eq 0 ] || log.separator "#"
 	[ $R -ne 0 ] && out.error "This script returned $R" || out.detail "This script succeded"
-	[ ${LOG_levelID} -eq 0 ] || log.separator "#"
-	[ ${LOG_levelID} -eq 0 ] || exec >&- >&4
+	[ ${LOG_levelID:-15} -eq 0 ] || log.separator "#"
+	[ ${LOG_levelID:-15} -eq 0 ] || exec >&- >&4
 	OUT_fd=1
 	return $R
 }
@@ -286,6 +286,9 @@ args.help() {
 args.parse() {
 	local f=0
 	out.init
+	if is.function args.pre;then
+		args.pre
+	fi
 	if [ $# -gt 0 ] && [[ "$1" == -* ]];then
 		while [ $# -gt 0 ];do
 			f=0
@@ -344,7 +347,8 @@ args.parse() {
 		done
 	elif [ $# -gt 0 ] && is.set ARGS_short_cmd;then
 		ARGS_tmp=("${ARGS_short_cmd[@]}")
-		while is.set ARGS_tmp;do 
+		while is.set ARGS_tmp;do
+			[ $# -eq 0 ] && break;
 			v=${ARGS_tmp[0]};ARGS_tmp=("${ARGS_tmp[@]:1}")
 			for (( i=0; i<${#ARGS_vars[@]}; i++ ));do
 				if [[ "${ARGS_vars[$i]}" == "$v" ]];then
@@ -366,7 +370,15 @@ args.parse() {
 					else
 						eval "${ARGS_vars[$i]}=\"$*\"";
 					fi
-					shift
+					if [[ "${ARGS_cb[$i]}" != "" ]];then
+						if ! ${ARGS_cb[$i]} $1;then
+							out.error "\"$1\" is an invalid value for \"${ARGS_vars[$i]}\""
+							args.help
+							out.error "\"$1\" is an invalid value for \"${ARGS_vars[$i]}\""
+							exit 1
+						fi
+					fi
+					shift;break
 				fi
 			done
 		done
