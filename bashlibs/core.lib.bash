@@ -36,6 +36,8 @@ is.set() { 	[ ! -z ${!1+x} ]; }
 is.number() {	[[ $1 =~ ^-?[0-9]+$ ]]; }
 is.function() {	typeset -f $1 >/dev/null; }
 is.array() { 	is.set $1 && [[ "$(declare -p $1)" =~ "declare -a" ]]; }
+array.have () { local e match="$1";shift;for e; do [[ "$e" == "$match" ]] && return 0; done;return 1; }
+
 
 OUT_levels=(NONE FAIL ERROR OK TASK WARNING STDERR NOTICE CMD INFO STDOUT DETAIL ASSERT ALL)
 OUT_level=${OUT_level:-STDOUT}
@@ -396,4 +398,16 @@ args.parse() {
 	if is.function args.post;then
 		args.post
 	fi
+}
+
+cfg.file.exist() {
+	[ -r "$CFG_file" ]
+}
+cfg.exist() {
+	cfg.file.exist || return 2
+	awk -v P="$1" -F= 'BEGIN{R=1}END{exit R}$1~"^"P"[ ]*$"{R=0}'<"$CFG_file"
+}
+cfg.get() {
+	cfg.file.exist || return 2
+	awk -v P="$1" -F= '$1~"^"P"[ ]*$"{sub("^[ ]*","",$2);print $2}' < "$CFG_file"
 }
