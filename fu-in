@@ -76,3 +76,4 @@ for om in $(sed 's/:/ /g'<<<$OUT);do
 	[[ "$om" == "XML"  ]] && test.reportXML  >$OUT_dir/${OUT_filePrefix}.xml
 	[[ "$om" == "HTML" ]] && test.reportHTML >$OUT_dir/${OUT_filePrefix}.html
 done
+exit $R

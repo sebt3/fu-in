@@ -319,7 +319,7 @@ ENDXML
 			tst=$(eval "echo \${TEST_${TEST_groups[$g]}_tests[$t]}")
 			id=$(test.testID $tst)
 			[ -z ${TEST_results[$id]} ] && continue
-			echo "    <testsuite id=\"${TEST_tests[$t]}\" errors=\"${TEST_results[$t]}\" hostname=\"$(hostname)\" name=\"${TEST_desc[$t]}\" tests=\"${TEST_asserts[$t]}\" time=\"${TEST_duration[$t]}\">"
+			echo "    <testsuite id=\"${TEST_tests[$id]}\" errors=\"${TEST_results[$id]}\" hostname=\"$(hostname)\" name=\"${TEST_desc[$id]}\" tests=\"${TEST_asserts[$id]}\" time=\"${TEST_duration[$id]}\">"
 			ns=$(eval "echo \${#TEST_${tst}_steps[@]}")
 			for (( s=0; s<$ns; s++ ));do
 				stp=$(eval "echo \${TEST_${tst}_steps[$s]}")
